@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Auto-discovery of node modules for ComfyUI by Light-x02
 # Scans this package directory and imports every .py (except __init__.py)
 # Then merges NODE_CLASS_MAPPINGS / NODE_DISPLAY_NAME_MAPPINGS.
@@ -5,6 +6,7 @@
 import os
 import importlib
 
+# Frontend assets directory (for optional JS UI like presets menu)
 WEB_DIRECTORY = "./js"
 
 NODE_CLASS_MAPPINGS = {}
