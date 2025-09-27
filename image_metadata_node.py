@@ -27,10 +27,10 @@ class ImageMetadataLoader(ComfyNodeABC):
             return f"Invalid image file: {image}"
         return True
 
-    CATEGORY = "image"
+    CATEGORY = "lightx02/utilities"
     RETURN_TYPES = ("IMAGE", "METADATA", "MASK")
     FUNCTION = "load_image_with_metadata"
-    DESCRIPTION = "Loads images with original metadata intact. Developed by Light_x02."
+    DESCRIPTION = "Loads images with original metadata intact."
 
     def load_image_with_metadata(self, image):
         image_path = folder_paths.get_annotated_filepath(image)
@@ -123,8 +123,8 @@ class ImageMetadataSaver(ComfyNodeABC):
     RETURN_TYPES = ()
     FUNCTION = "save_images"
     OUTPUT_NODE = True
-    CATEGORY = "image"
-    DESCRIPTION = "Saves images with metadata intact. Developed by Light_x02."
+    CATEGORY = "lightx02/utilities"
+    DESCRIPTION = "Saves images with metadata intact."
 
     def save_images(self, images, metadata={}, filename_prefix="ComfyUI", subdirectory_name=""):
         if metadata is None:
@@ -193,6 +193,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImageMetadataLoader": "Image Metadata Loader (by Light_x02)",
-    "ImageMetadataSaver": "Image Metadata Saver (by Light_x02)"
+    "ImageMetadataLoader": "Image Metadata Loader",
+    "ImageMetadataSaver": "Image Metadata Saver"
 }
