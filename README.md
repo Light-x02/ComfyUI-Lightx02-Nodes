@@ -9,7 +9,7 @@ This repository brings together several custom nodes developed to make ComfyUI m
 ## 🌐 Links & Support
 - ☕ **Ko-fi** → [https://ko-fi.com/light_x02](https://ko-fi.com/light_x02)  
 - 🖼️ **Civitai** → [https://civitai.com/user/Lightx02](https://civitai.com/user/Light_x02)  
-- 📷 **Facebook** → [https://facebook.com/lightx02](https://www.facebook.com/Unrealeterna)
+- 📷 **Facebook** → [https://facebook.com/Unrealeterna](https://www.facebook.com/Unrealeterna)
 
 ---
 
