@@ -29,13 +29,7 @@ class _NoiseRandom:
 
 
 class FluxSettingsPipe:
-    """
-    Flux Settings Pipe
-    Produces both individual outputs and a bundled 'pipe' object.
-    Field order in the middle UI:
-    resolution, flip_orientation, batch_size, width_override, height_override,
-    sampler_name, scheduler, steps, denoise, guidance, noise_seed
-    Optional: model, conditioning
+    """Core settings pipe for Flux/SDXL. If this module fails to import, check server logs.
     """
     def __init__(self):
         self.device = comfy.model_management.intermediate_device()
@@ -44,7 +38,8 @@ class FluxSettingsPipe:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "resolution": (
+                # FLUX (Flux) square-ish/defaults
+                "resolution_flux": (
                     [
                         "1056x2112 (0.5)","1056x2016 (0.52)","1152x2016 (0.57)","1152x1920 (0.6)",
                         "1248x1824 (0.68)","1248x1728 (0.72)","1344x1728 (0.78)","1344x1632 (0.82)",
@@ -56,7 +51,24 @@ class FluxSettingsPipe:
                     ],
                     {"default": "1536x1536 (1.0)"}
                 ),
-                "flip_orientation": ("BOOLEAN", {"default": False, "label_on": "Landscape", "label_off": "Portrait"}),
+                # Toggle Flux/SDXL (True->Flux, False->SDXL)
+                "mode_resolution": ("BOOLEAN", {"default": True, "label_on": "Flux", "label_off": "SDXL"}),
+
+                # SDXL typical set
+                "resolution_sdxl": (
+                    [
+                        "704x1408 (0.5)","704x1344 (0.52)","768x1344 (0.57)","768x1280 (0.6)",
+                        "832x1216 (0.68)","832x1152 (0.72)","896x1152 (0.78)","896x1088 (0.82)",
+                        "960x1088 (0.88)","960x1024 (0.94)","1024x1024 (1.0)","1024x960 (1.07)",
+                        "1088x960 (1.13)","1088x896 (1.21)","1152x896 (1.29)","1152x832 (1.38)",
+                        "1216x832 (1.46)","1280x768 (1.67)","1344x768 (1.75)","1344x704 (1.91)",
+                        "1408x704 (2.0)","1472x704 (2.09)","1536x640 (2.4)","1600x640 (2.5)",
+                        "1664x576 (2.89)","1728x576 (3.0)",
+                    ],
+                    {"default": "1024x1024 (1.0)"}
+                ),
+
+                "flip_orientation": ("BOOLEAN", {"default": False, "label_on": "Swap W/H", "label_off": "Default"}),
                 "batch_size": ("INT", {"default": 1, "min": 1, "max": 4096}),
                 "width_override": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 8}),
                 "height_override": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 8}),
@@ -65,6 +77,7 @@ class FluxSettingsPipe:
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "guidance": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
+                "cfg": ("FLOAT", {"default": 4.5, "min": 0.0, "max": 30.0, "step": 0.1}),
                 "noise_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
             },
             "optional": {
@@ -73,14 +86,17 @@ class FluxSettingsPipe:
             }
         }
 
-    RETURN_TYPES = ("FLUX_PIPE", "LATENT", "INT", "INT", "SAMPLER", "SIGMAS", "NOISE", "INT", "CONDITIONING",)
-    RETURN_NAMES  = ("pipe",      "LATENT","width","height","sampler","sigmas","noise","seed","conditioning",)
+    # Added cfg in outputs too
+    RETURN_TYPES = ("FLUX_PIPE", "LATENT", "INT", "INT", "SAMPLER", "SIGMAS", "NOISE", "INT", "FLOAT", "CONDITIONING",)
+    RETURN_NAMES  = ("pipe",      "LATENT","width","height","sampler","sigmas","noise","seed","cfg","conditioning",)
     FUNCTION = "execute"
-    CATEGORY = "flux/utilities"
+    CATEGORY = "lightx02/utilities"
 
     def execute(
         self,
-        resolution,
+        resolution_flux,
+        mode_resolution=True,   # True -> Flux, False -> SDXL
+        resolution_sdxl="1024x1024 (1.0)",
         flip_orientation=False,
         batch_size=1,
         width_override=0,
@@ -90,16 +106,24 @@ class FluxSettingsPipe:
         steps=20,
         denoise=1.0,
         guidance=3.5,
+        cfg=4.5,
         model=None,
         conditioning=None,
         noise_seed=0,
     ):
-        # Resolution
-        width_str, height_str = resolution.split(" ")[0].split("x")
+        # Pick active resolution by mode
+        selected = resolution_flux if bool(mode_resolution) else resolution_sdxl
+        width_str, height_str = selected.split(" ")[0].split("x")
+
+        # Apply overrides
         width = width_override if width_override > 0 else int(width_str)
         height = height_override if height_override > 0 else int(height_str)
+
+        # Flip orientation (swap W/H)
         if flip_orientation:
             width, height = height, width
+
+        # Clamp
         width  = max(8, min(width,  MAX_RESOLUTION))
         height = max(8, min(height, MAX_RESOLUTION))
 
@@ -118,12 +142,23 @@ class FluxSettingsPipe:
                 sigmas = comfy.samplers.calculate_sigmas(model_sampling, scheduler, total_steps).cpu()
                 if sigmas.shape[-1] >= (steps + 1):
                     sigmas = sigmas[-(steps + 1):]
+        # Attach metadata to sigmas so it can be unpacked later
+        try:
+            sigmas_out = sigmas.clone() if torch.is_tensor(sigmas) else torch.FloatTensor([])
+            setattr(sigmas_out, "_meta", {
+                "sampler_name": str(sampler_name),
+                "scheduler": str(scheduler),
+                "steps": int(steps),
+                "denoise": float(denoise),
+            })
+        except Exception:
+            sigmas_out = sigmas
 
         # Noise (for SamplerCustom*) and seed (for native KSampler)
         noise = _NoiseRandom(noise_seed)
         seed_out = int(noise_seed)
 
-        # Flux guidance on conditioning
+        # Flux guidance on conditioning (keep 'guidance' in cond values)
         if conditioning is not None:
             conditioning_out = node_helpers.conditioning_set_values(conditioning, {"guidance": float(guidance)})
         else:
@@ -135,29 +170,26 @@ class FluxSettingsPipe:
             "width": width,
             "height": height,
             "sampler": sampler,
-            "sigmas": sigmas,
+            "sigmas": sigmas_out,
             "noise": noise,
             "seed": seed_out,
             "conditioning": conditioning_out,
+            "cfg": float(cfg),
+            "mode": ("FLUX" if bool(mode_resolution) else "SDXL"),
         }
 
-        return (pipe, {"samples": latent}, width, height, sampler, sigmas, noise, seed_out, conditioning_out)
+        return (pipe, {"samples": latent}, width, height, sampler, sigmas_out, noise, seed_out, float(cfg), conditioning_out)
 
 
 class FluxPipeUnpack:
-    """
-    Flux Pipe Unpack
-    Unpacks a FLUX_PIPE into individual outputs in the same order:
-    LATENT, width, height, SAMPLER, SIGMAS, NOISE, seed, CONDITIONING
-    """
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {"pipe": ("FLUX_PIPE",)}}
 
-    RETURN_TYPES = ("LATENT","INT","INT","SAMPLER","SIGMAS","NOISE","INT","CONDITIONING",)
-    RETURN_NAMES  = ("LATENT","width","height","sampler","sigmas","noise","seed","conditioning",)
+    RETURN_TYPES = ("FLUX_PIPE","LATENT","INT","INT","SAMPLER","SIGMAS","NOISE","INT","FLOAT","CONDITIONING",)
+    RETURN_NAMES  = ("pipe","LATENT","width","height","sampler","sigmas","noise","seed","cfg","conditioning",)
     FUNCTION = "unpack"
-    CATEGORY = "flux/utilities"
+    CATEGORY = "lightx02/utilities"
 
     def unpack(self, pipe):
         latent = pipe.get("latent", {"samples": torch.zeros([1,4,64,64])})
@@ -167,19 +199,41 @@ class FluxPipeUnpack:
         sigmas = pipe.get("sigmas", torch.FloatTensor([]))
         noise = pipe.get("noise", None)
         seed = int(pipe.get("seed", 0))
+        cfg = float(pipe.get("cfg", 0.0))
         conditioning = pipe.get("conditioning", None)
-        return (latent, width, height, sampler, sigmas, noise, seed, conditioning)
+        return (pipe, latent, width, height, sampler, sigmas, noise, seed, cfg, conditioning)
+
+
+class SigmasUnpack:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {"sigmas": ("SIGMAS", )}}
+
+    RETURN_TYPES = ("STRING", "STRING", "INT", "FLOAT")
+    RETURN_NAMES  = ("sampler_name", "scheduler", "steps", "denoise")
+    FUNCTION = "unpack"
+    CATEGORY = "lightx02/utilities"
+
+    def unpack(self, sigmas):
+        meta = getattr(sigmas, "_meta", {}) if sigmas is not None else {}
+        sampler_name = str(meta.get("sampler_name", ""))
+        scheduler = str(meta.get("scheduler", ""))
+        steps = int(meta.get("steps", 0))
+        denoise = float(meta.get("denoise", 1.0))
+        return (sampler_name, scheduler, steps, denoise)
 
 
 # ---- Node mappings
 NODE_CLASS_MAPPINGS = {
     "FluxSettingsPipe": FluxSettingsPipe,
     "FluxPipeUnpack": FluxPipeUnpack,
+    "SigmasUnpack": SigmasUnpack,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "FluxSettingsPipe": "⚙️ Flux Settings Pipe",
-    "FluxPipeUnpack": "📤 Flux Pipe Unpack",
+    "FluxSettingsPipe": "⚙️ Flux/Sdxl Settings Pipe",
+    "FluxPipeUnpack": "📤 Settings Pipe Unpack",
+    "SigmasUnpack": "📤 Sigmas Unpack",
 }
 
 
