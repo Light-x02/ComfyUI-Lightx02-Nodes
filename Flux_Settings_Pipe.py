@@ -1,5 +1,3 @@
-﻿# -*- coding: utf-8 -*-
-
 import os
 import json
 import torch
@@ -218,7 +216,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 
 # -------------------------------
-# Presets API (one JSON file per preset)
+# Presets API
 # -------------------------------
 import re
 
@@ -314,3 +312,4 @@ if PromptServer and web and hasattr(PromptServer, "instance"):
             return web.json_response({"ok": False, "error": "missing name"}, status=400)
         _delete_preset(name)
         return web.json_response({"ok": True})
+
