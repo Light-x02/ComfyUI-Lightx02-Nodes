@@ -7,7 +7,10 @@ import comfy.model_management
 import comfy.samplers
 import comfy.sample
 import node_helpers
-from nodes import MAX_RESOLUTION
+try:
+    from nodes import MAX_RESOLUTION
+except Exception:
+    MAX_RESOLUTION = 8192  # safe fallback if import fails
 
 # Optional server imports (for presets API)
 try:
@@ -142,12 +145,10 @@ class FluxSettingsPipe:
                 sigmas = comfy.samplers.calculate_sigmas(model_sampling, scheduler, total_steps).cpu()
                 if sigmas.shape[-1] >= (steps + 1):
                     sigmas = sigmas[-(steps + 1):]
-        # Attach metadata to sigmas so it can be unpacked later
+        # Attach metadata to sigmas so it can be unpacked later (only what’s useful elsewhere)
         try:
             sigmas_out = sigmas.clone() if torch.is_tensor(sigmas) else torch.FloatTensor([])
             setattr(sigmas_out, "_meta", {
-                "sampler_name": str(sampler_name),
-                "scheduler": str(scheduler),
                 "steps": int(steps),
                 "denoise": float(denoise),
             })
@@ -204,36 +205,15 @@ class FluxPipeUnpack:
         return (pipe, latent, width, height, sampler, sigmas, noise, seed, cfg, conditioning)
 
 
-class SigmasUnpack:
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {"required": {"sigmas": ("SIGMAS", )}}
-
-    RETURN_TYPES = ("STRING", "STRING", "INT", "FLOAT")
-    RETURN_NAMES  = ("sampler_name", "scheduler", "steps", "denoise")
-    FUNCTION = "unpack"
-    CATEGORY = "lightx02/utilities"
-
-    def unpack(self, sigmas):
-        meta = getattr(sigmas, "_meta", {}) if sigmas is not None else {}
-        sampler_name = str(meta.get("sampler_name", ""))
-        scheduler = str(meta.get("scheduler", ""))
-        steps = int(meta.get("steps", 0))
-        denoise = float(meta.get("denoise", 1.0))
-        return (sampler_name, scheduler, steps, denoise)
-
-
 # ---- Node mappings
 NODE_CLASS_MAPPINGS = {
     "FluxSettingsPipe": FluxSettingsPipe,
     "FluxPipeUnpack": FluxPipeUnpack,
-    "SigmasUnpack": SigmasUnpack,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "FluxSettingsPipe": "⚙️ Flux/Sdxl Settings Pipe",
     "FluxPipeUnpack": "📤 Settings Pipe Unpack",
-    "SigmasUnpack": "📤 Sigmas Unpack",
 }
 
 
