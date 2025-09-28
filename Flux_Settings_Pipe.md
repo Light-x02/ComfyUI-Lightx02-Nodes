@@ -1,9 +1,9 @@
 # ComfyUI — ⚙️ Flux/Sdxl Settings Pipe & 📤 Settings Pipe Unpack
 
 **Version**: 1.0.0\
-**Auteur**: [Light-x02](https://github.com/Light-x02)
+**Author**: [Light-x02](https://github.com/Light-x02)
 
-> Ces deux nœuds sont pensés pour simplifier les workflows **Flux** et **SDXL** : un unique nœud pour régler la résolution et les paramètres de sampling, et un nœud pour dépaqueter les champs depuis le **pipe**.
+> These two nodes are designed to simplify **Flux** and **SDXL** workflows: a single node to configure resolution and sampling parameters, and a second node to unpack fields from the **pipe**.
 
 ---
 
@@ -11,25 +11,25 @@
 
 ### Description
 
-Nœud central qui **prépare les paramètres** pour **Flux** *ou* **SDXL**. Il propose deux listes de résolutions adaptées (Flux vs SDXL) et un **switch** (`mode_resolution`) pour passer de l’un à l’autre. Il calcule et renvoie un **pipe** (objet structuré) qui regroupe tout le nécessaire pour sampler proprement, ainsi que des sorties individuelles (latent, width/height, sampler, sigmas, etc.).
+Central node that **prepares settings** for **Flux** *or* **SDXL**. It offers two lists of model-specific resolutions (Flux vs SDXL) and a **switch** (`mode_resolution`) to toggle between them. It computes and outputs a **pipe** (structured object) containing everything needed for proper sampling, along with individual outputs (latent, width/height, sampler, sigmas, etc.).
 
-### Fonctions principales
+### Main Features
 
-- **Mode Flux/SDXL switchable** (`mode_resolution`) avec **résolutions adaptées** à chaque famille de modèles.
-- **Résolutions prédéfinies** + **overrides** (`width_override`, `height_override`) et **flip d’orientation** (échanger W/H) pour aller plus vite.
-- **Sampler & Scheduler** : sélectionne le sampler et le scheduler officiels de ComfyUI.
-- **Steps & Denoise** : contrôle précis du nombre d’itérations et de la force de débruitage.
-- **Guidance & CFG** : gère la guidance (écrit dans la conditioning) et expose un **CFG** dédié.
-- **Seed & Bruit** : génère un **générateur de bruit** réutilisable (custom noise) + expose le **seed**.
-- **Sortie Pipe** : renvoie un **FLUX\_PIPE** complet, idéal pour garder un workflow **propre et modulaire**.
+- **Flux/SDXL switchable mode** (`mode_resolution`) with **resolutions adapted** to each model family.
+- **Preset resolutions** + **overrides** (`width_override`, `height_override`) and **flip orientation** (swap W/H) for faster setup.
+- **Sampler & Scheduler**: select from ComfyUI’s official samplers and schedulers.
+- **Steps & Denoise**: fine control over iteration count and denoising strength.
+- **Guidance & CFG**: manage guidance (written into conditioning) and expose a dedicated **CFG**.
+- **Seed & Noise**: generates a reusable **custom noise generator** and exposes the **seed**.
+- **Pipe Output**: returns a full **FLUX\_PIPE**, ideal for keeping workflows **clean and modular**.
 
-### Exemple d’usage
+### Example Usage
 
-1. Place **⚙️ Flux/Sdxl Settings Pipe** et choisis **Flux** ou **SDXL** via `mode_resolution`.
+1. Place **⚙️ Flux/Sdxl Settings Pipe** and select **Flux** or **SDXL** using `mode_resolution`.
 
-2. Choisis `sampler_name`, `scheduler`, `steps`, `denoise`. Règle `guidance` ou `cfg`.
+2. Choose `sampler_name`, `scheduler`, `steps`, `denoise`. Adjust `guidance` or `cfg` as needed.
 
-3. Chaîne la sortie **`pipe`** vers **📤 Settings Pipe Unpack** (si tu veux des sorties individuelles proprement).
+3. Connect the **`pipe`** output to **📤 Settings Pipe Unpack** (to access clean individual outputs).
 
 ---
 
@@ -37,57 +37,60 @@ Nœud central qui **prépare les paramètres** pour **Flux** *ou* **SDXL**. Il p
 
 ### Description
 
-Dépaquette un **FLUX\_PIPE** pour récupérer **toutes les sorties** utiles **sans encombrer le workflow**. La première sortie PIPE permet de **prolonger** la chaîne à partir du même objet si besoin (bonne pratique pour garder un graphe propre et modulaire).
+Unpacks a **FLUX\_PIPE** to retrieve **all useful outputs** without cluttering the workflow. The first PIPE output allows you to **extend** the chain from the same object if needed (best practice to keep the graph clean and modular).
 
-### Pourquoi l’utiliser ?
+### Why Use It?
 
-- **Centraliser** : un seul câble du nœud central vers l’unpack → moins de fils partout.
-- **Prolongeable** : garde `pipe` en première sortie pour enchaîner d’autres nœuds compatibles.
-- **Lisibilité** : workflows plus **propres** et **maintenables**.
-
----
-
-## Presets — Gestion et bonnes pratiques
-
-Ces nœuds incluent un **système de presets** (bouton **Manage presets** côté UI) permettant de **sauvegarder/charger** l’état du nœud **⚙️ Flux/Sdxl Settings Pipe**.
-
-### Ce qui est sauvegardé
-
-- Les **valeurs des widgets** principaux du nœud (résolution, mode Flux/SDXL, steps, denoise, sampler, scheduler, guidance, cfg, etc.).
-- Les elements purement **UI** (headers colorés, bouton de gestion) **ne sont pas** enregistrés.
-
-### Opérations disponibles
-
-- **Apply to node** : applique le preset sélectionné au nœud courant.
-- **Save (overwrite)** : écrase le preset sélectionné avec les valeurs actuelles du nœud.
-- **Save As…** : crée un **nouveau preset**.
-- **Rename…** : renomme un preset.
-- **Delete** : supprime le preset.
-- **Export / Import** : échange de presets via fichiers JSON..
-
-### Où sont stockés les presets ?
-
-- Un **fichier JSON par preset** dans un sous-dossier `presets/` de l’extension
+- **Centralize**: a single cable from the main node to the unpack → fewer wires everywhere.
+- **Extendable**: keeps `pipe` as the first output to chain other compatible nodes.
+- **Readable**: results in cleaner, more maintainable workflows.
 
 ---
 
+## Presets — Management and Best Practices
+
+These nodes include a **preset system** (UI button **Manage presets**) that lets you **save/load** the state of the **⚙️ Flux/Sdxl Settings Pipe** node.
+
+### What Gets Saved
+
+- The **main widget values** of the node (resolution, Flux/SDXL mode, steps, denoise, sampler, scheduler, guidance, cfg, etc.).
+- Purely **UI elements** (colored headers, management button) are **not** saved.
+
+### Available Operations
+
+- **Apply to node**: apply the selected preset to the current node.
+- **Save (overwrite)**: overwrite the selected preset with the node’s current values.
+- **Save As…**: create a **new preset**.
+- **Rename…**: rename a preset.
+- **Delete**: remove a preset.
+- **Export / Import**: exchange presets via JSON files.
+
+### Where Are Presets Stored?
+
+- One **JSON file per preset** in the extension’s `presets/` subfolder.
+
 ---
 
-## Compatibilité
+## Compatibility
 
-- Compatibles **Flux** et **SDXL** (listes de résolutions pensées pour chaque famille de modèles).
-- Le **pipe** est conçu pour rester **stable et prolongeable**, afin d’éviter l’enchevêtrement de câbles.
+- Compatible with **Flux** and **SDXL** (resolution lists designed for each model family).
+- The **pipe** is designed to remain **stable and extendable**, preventing cable clutter.
 
 ---
 
 ## Support
 
-Si ces nœuds te font gagner du temps, tu peux soutenir le projet :\
+If these nodes save you time, you can support the project: \
 **Ko‑fi** → [https://ko-fi.com/light\_x02](https://ko-fi.com/light_x02)
 
 ---
 
-## Licence
+## Example Workflow
 
-Sauf mention contraire dans le repo, ces fichiers sont publiés sous licence MIT.
+![Workflow Example](assets/221814.png) ![Workflow Example](assets/221924.png)
 
+---
+
+## License
+
+Unless otherwise stated in the repo, these files are released under the MIT License.
