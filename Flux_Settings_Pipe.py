@@ -184,36 +184,83 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
 
 # -------------------------------
-# Presets API (JSON on disk)
+# Presets API (one JSON file per preset)
 # -------------------------------
+import re
+
 PRESET_DIR = os.path.join(os.path.dirname(__file__), "presets")
-PRESET_FILE = os.path.join(PRESET_DIR, "flux_presets.json")
+LEGACY_FILE = os.path.join(PRESET_DIR, "flux_presets.json")  # ancien format "tout-en-un"
 
-def _ensure_preset_file():
+def _ensure_preset_dir():
     os.makedirs(PRESET_DIR, exist_ok=True)
-    if not os.path.exists(PRESET_FILE):
-        with open(PRESET_FILE, "w", encoding="utf-8") as f:
-            json.dump({}, f, ensure_ascii=False, indent=2)
 
-def _load_presets():
-    _ensure_preset_file()
-    with open(PRESET_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+def _safe_name(name: str) -> str:
+    # garde lettres/chiffres/espace/_-. ; remplace le reste par _
+    name = (name or "").strip()
+    name = re.sub(r"[^A-Za-z0-9 _.-]", "_", name)
+    return name or "preset"
 
-def _save_presets(data: dict):
-    _ensure_preset_file()
-    with open(PRESET_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def _preset_path(name: str) -> str:
+    _ensure_preset_dir()
+    return os.path.join(PRESET_DIR, f"{_safe_name(name)}.json")
 
-# Register HTTP routes if available
+def _list_presets():
+    _ensure_preset_dir()
+    items = []
+    for fn in os.listdir(PRESET_DIR):
+        if not fn.lower().endswith(".json"):
+            continue
+        if fn == "flux_presets.json":  # ignorer l'ancien conteneur
+            continue
+        path = os.path.join(PRESET_DIR, fn)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                payload = json.load(f)
+        except Exception:
+            payload = {}
+        name = os.path.splitext(fn)[0]
+        items.append({"name": name, "payload": payload})
+    items.sort(key=lambda x: x["name"].lower())
+    return items
+
+def _save_preset(name: str, payload: dict):
+    path = _preset_path(name)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+
+def _delete_preset(name: str):
+    path = _preset_path(name)
+    if os.path.exists(path):
+        os.remove(path)
+
+def _migrate_legacy_file_if_any():
+    """Si un ancien flux_presets.json (avec {name: payload}) existe,
+    on migre chaque entrée dans son propre fichier, puis on renomme l'ancien."""
+    try:
+        if os.path.exists(LEGACY_FILE):
+            with open(LEGACY_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, dict):
+                for k, v in data.items():
+                    if isinstance(v, dict):
+                        _save_preset(k, v)
+            # archiver l'ancien fichier pour ne plus le recharger
+            os.rename(LEGACY_FILE, LEGACY_FILE + ".migrated.bak")
+            print("[FluxSettingsPipe] migrated legacy flux_presets.json -> individual files")
+    except Exception as e:
+        print("[FluxSettingsPipe] legacy migration error:", e)
+
+# Enregistrer les routes HTTP
 if PromptServer and web and hasattr(PromptServer, "instance"):
     routes = PromptServer.instance.routes
 
+    # Migration à l'import
+    _ensure_preset_dir()
+    _migrate_legacy_file_if_any()
+
     @routes.get("/extensions/flux-suite/presets")
     async def flux_list_presets(request):
-        presets = _load_presets()
-        items = [{"name": k, "payload": v} for k, v in presets.items()]
-        return web.json_response({"presets": items})
+        return web.json_response({"presets": _list_presets()})
 
     @routes.post("/extensions/flux-suite/presets/save")
     async def flux_save_preset(request):
@@ -222,9 +269,7 @@ if PromptServer and web and hasattr(PromptServer, "instance"):
         payload = data.get("payload")
         if not name or not isinstance(payload, dict):
             return web.json_response({"ok": False, "error": "invalid payload"}, status=400)
-        presets = _load_presets()
-        presets[name] = payload
-        _save_presets(presets)
+        _save_preset(name, payload)
         return web.json_response({"ok": True})
 
     @routes.post("/extensions/flux-suite/presets/delete")
@@ -233,8 +278,5 @@ if PromptServer and web and hasattr(PromptServer, "instance"):
         name = data.get("name")
         if not name:
             return web.json_response({"ok": False, "error": "missing name"}, status=400)
-        presets = _load_presets()
-        if name in presets:
-            del presets[name]
-            _save_presets(presets)
+        _delete_preset(name)
         return web.json_response({"ok": True})
