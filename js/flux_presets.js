@@ -1,14 +1,14 @@
 ﻿import { app } from "../../scripts/app.js";
 
 (function () {
-    const NODE_CLASS = "FluxSettingsPipe"; // nom public du nœud côté ComfyUI (doit matcher la classe Python)
+    const NODE_CLASS = "FluxSettingsPipe"; 
 
     const PresetsAPI = (() => {
         let presetCache = []; // [{ name: string, payload: object }]
 
         async function apiGet(url) {
             const r = await fetch(url, { method: "GET" });
-            if (!r.ok) return null; // on renvoie null plutôt qu'une exception, l'appelant gère le fallback
+            if (!r.ok) return null; 
             return await r.json();
         }
         async function apiPost(url, body) {
@@ -28,17 +28,14 @@
         async function refresh() {
             try {
                 const data = await fetchPresets();
-                // normalise la forme pour éviter de traîner des champs inattendus
                 presetCache = (data?.presets || []).map(p => ({ name: p.name, payload: p.payload }));
             } catch {
-                presetCache = []; // si l'API n'est pas dispo, on sécurise en vidant proprement
+                presetCache = []; 
             }
             return presetCache;
         }
-        // Renvoie un clone superficiel du cache (immutabilité de l'appelant)
         function list() { return presetCache.slice(); }
 
-        // Prime le cache une première fois (best-effort, non bloquant)
         refresh();
 
         return { fetchPresets, savePreset, deletePreset, refresh, list };
@@ -126,7 +123,6 @@
 
             if (!w) {
                 w = node.addWidget("button", label, null, () => {
-                    // Ouverture de la palette (positionnée au clic si possible)
                     Utils.openColorPicker(w._bg, (val) => {
                         if (!val) return;                      // si annulation
                         w._bg = val;                          // MAJ fond
@@ -163,10 +159,8 @@
         function addSectionHeaders(node) {
             if (node.__fluxHeadersAdded) return;         // protège de l'injection multiple
 
-            // 1) En-tête LATENT inséré avant la résolution FLUX
             insertHeader(node, "resolution_flux", "LATENT", "#5A67D8", "__hdr_LATENT");
 
-            // 2) Renommer le widget "use_flux" -> "mode_resolution" et le placer juste sous le header LATENT
             const modeWidget = node.widgets?.find(w => w.name === "use_flux" || w.name === "mode_resolution");
             if (modeWidget) modeWidget.name = "mode_resolution";
             const headerIdx = node.widgets.findIndex(w => w.__fluxHeaderMarker === "__hdr_LATENT");
@@ -176,7 +170,6 @@
                 node.widgets.splice(headerIdx + 1, 0, wMode);
             }
 
-            // 3) Autres sections
             insertHeader(node, "sampler_name", "Settings", "#2B6CB0", "__hdr_SETTINGS");
             insertHeader(node, "guidance", "Flux Guidance", "#2F855A", "__hdr_GUIDE");
             insertHeader(node, "noise_seed", "Random Noise", "#B7791F", "__hdr_NOISE");
@@ -207,7 +200,6 @@
                 ctx.fillText(label, Math.max(8, cx), y + 13);
                 ctx.restore();
             };
-            // S'assure que le footer reste en bas du bloc (hack d'ordre des widgets)
             const last = node.widgets.pop(); node.widgets.push(last);
         }
 
@@ -465,3 +457,4 @@
 
     Integration.register();
 })();
+
