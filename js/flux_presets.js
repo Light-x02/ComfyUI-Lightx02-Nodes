@@ -1,4 +1,4 @@
-﻿// Presets + colored section headers + footer + Manage dialog for FluxSettingsPipe
+﻿// Presets + colored headers + footer + Manage dialog (draggable) for FluxSettingsPipe
 import { app } from "../../scripts/app.js";
 
 const NODE_CLASS = "FluxSettingsPipe";
@@ -13,10 +13,8 @@ async function deletePreset(name) { return await apiPost("/extensions/flux-suite
 /* ------------ Cache côté client ------------ */
 let presetCache = []; // [{name,payload}]
 async function refreshPresetsCache() {
-    try {
-        const data = await fetchPresets();
-        presetCache = (data?.presets || []).map(p => ({ name: p.name, payload: p.payload }));
-    } catch { presetCache = []; }
+    try { const data = await fetchPresets(); presetCache = (data?.presets || []).map(p => ({ name: p.name, payload: p.payload })); }
+    catch { presetCache = []; }
 }
 refreshPresetsCache();
 
@@ -41,35 +39,31 @@ function textColorFor(bg) {
     const m = /^#?([0-9a-f]{6})$/i.exec(bg || "");
     if (!m) return "#ffffff";
     const hex = m[1];
-    const r = parseInt(hex.slice(0, 2), 16) / 255;
-    const g = parseInt(hex.slice(2, 4), 16) / 255;
-    const b = parseInt(hex.slice(4, 6), 16) / 255;
+    const r = parseInt(hex.slice(0, 2), 16) / 255, g = parseInt(hex.slice(2, 4), 16) / 255, b = parseInt(hex.slice(4, 6), 16) / 255;
     const srgb = [r, g, b].map(v => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
     const L = 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
     return L > 0.5 ? "#000000" : "#ffffff";
 }
 
-/* ------------ Static headers ------------ */
+/* ------------ Section headers ------------ */
 function insertHeader(node, beforeWidgetName, label, bgColor, markerName) {
     const marker = markerName || `__hdr_${beforeWidgetName}`;
     if (node.widgets?.some(w => w.name === marker)) return;
 
     const w = node.addWidget("info", label, "", null, { serialize: false });
-    w.name = marker;
-    w._bg = bgColor; w._fg = textColorFor(bgColor);
+    w.name = marker; w._bg = bgColor; w._fg = textColorFor(bgColor);
     w.computeSize = () => [200, 26];
     w.draw = (ctx, node2, widgetWidth, y) => {
         ctx.save();
         ctx.fillStyle = w._bg; ctx.fillRect(0, y + 2, widgetWidth, 22);
         ctx.fillStyle = w._fg; ctx.font = "600 12px sans-serif"; ctx.textBaseline = "middle";
-        const tw = ctx.measureText(label).width; const cx = (widgetWidth - tw) / 2;
-        ctx.fillText(label, Math.max(8, cx), y + 13); ctx.restore();
+        const tw = ctx.measureText(label).width, cx = (widgetWidth - tw) / 2;
+        ctx.fillText(label, Math.max(8, cx), y + 13);
+        ctx.restore();
     };
-
     const idx = node.widgets.findIndex(x => x.name === beforeWidgetName);
     if (idx >= 0) { const last = node.widgets.pop(); node.widgets.splice(idx, 0, last); }
 }
-
 function addSectionHeaders(node) {
     if (node.__fluxHeadersAdded) return;
     insertHeader(node, "resolution", "LATENT", "#5A67D8", "__hdr_LATENT");
@@ -80,8 +74,8 @@ function addSectionHeaders(node) {
     node.setDirtyCanvas(true, true);
 }
 
-/* ------------ Footer: current preset (persisted) ------------ */
-const LS_CURRENT = "flux_settings_pipe.current_preset"; // { "<node_id>": "<name>" }
+/* ------------ Footer (current preset) ------------ */
+const LS_CURRENT = "flux_settings_pipe.current_preset";
 function loadCurrentPresetName(node) { try { const map = JSON.parse(localStorage.getItem(LS_CURRENT)) || {}; return map[node.id] || null; } catch { return null; } }
 function saveCurrentPresetName(node, name) { const map = (() => { try { return JSON.parse(localStorage.getItem(LS_CURRENT)) || {}; } catch { return {}; } })(); if (name) map[node.id] = name; else delete map[node.id]; localStorage.setItem(LS_CURRENT, JSON.stringify(map)); }
 function ensureFooter(node) {
@@ -93,16 +87,18 @@ function ensureFooter(node) {
     w.computeSize = () => [200, 26];
     w.draw = (ctx, node2, widgetWidth, y) => {
         const label = w._presetName ? `Preset: ${w._presetName}` : "Preset: No preset loaded";
-        ctx.save(); ctx.fillStyle = w._bg; ctx.fillRect(0, y + 2, widgetWidth, 22);
+        ctx.save();
+        ctx.fillStyle = w._bg; ctx.fillRect(0, y + 2, widgetWidth, 22);
         ctx.fillStyle = w._fg; ctx.font = "600 12px sans-serif"; ctx.textBaseline = "middle";
-        const tw = ctx.measureText(label).width; const cx = (widgetWidth - tw) / 2;
-        ctx.fillText(label, Math.max(8, cx), y + 13); ctx.restore();
+        const tw = ctx.measureText(label).width, cx = (widgetWidth - tw) / 2;
+        ctx.fillText(label, Math.max(8, cx), y + 13);
+        ctx.restore();
     };
     const last = node.widgets.pop(); node.widgets.push(last);
 }
 function setFooterPresetName(node, name) { const w = node.widgets?.find(x => x.name === "__hdr_PRESET_FOOTER"); if (!w) return; w._presetName = name || null; saveCurrentPresetName(node, w._presetName); node.setDirtyCanvas(true, true); }
 
-/* ------------ Manage dialog ------------ */
+/* ------------ Manage dialog (draggable) ------------ */
 function downloadJSON(obj, filename) {
     const blob = new Blob([JSON.stringify(obj, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -112,21 +108,45 @@ function downloadJSON(obj, filename) {
 
 function createManageDialog(node) {
     const wrap = document.createElement("div");
-    wrap.style.position = "fixed"; wrap.style.inset = "0";
-    wrap.style.background = "rgba(0,0,0,0.5)"; wrap.style.zIndex = 99999;
-    wrap.style.display = "flex"; wrap.style.alignItems = "center"; wrap.style.justifyContent = "center";
+    wrap.style.position = "fixed"; wrap.style.left = "0"; wrap.style.top = "0"; wrap.style.right = "0"; wrap.style.bottom = "0";
+    wrap.style.background = "rgba(0,0,0,0.45)"; wrap.style.zIndex = 99999;
+    document.body.appendChild(wrap);
 
     const box = document.createElement("div");
     box.style.background = "#1e1e1e"; box.style.color = "#ddd";
     box.style.border = "1px solid #444"; box.style.borderRadius = "8px";
     box.style.width = "420px"; box.style.maxWidth = "90vw";
     box.style.padding = "14px"; box.style.boxShadow = "0 10px 30px rgba(0,0,0,0.6)";
+    box.style.position = "fixed"; box.style.left = "50%"; box.style.top = "20%";
+    box.style.transform = "translateX(-50%)";
     wrap.appendChild(box);
 
     const title = document.createElement("div");
     title.textContent = "Manage Presets";
-    title.style.fontWeight = "700"; title.style.marginBottom = "10px";
+    title.style.fontWeight = "700";
+    title.style.marginBottom = "10px";
+    title.style.cursor = "move";
+    title.style.textAlign = "center"; // centré
     box.appendChild(title);
+
+    // Drag
+    let isDragging = false, startX, startY, startLeft, startTop;
+    title.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        startX = e.clientX; startY = e.clientY;
+        const rect = box.getBoundingClientRect();
+        startLeft = rect.left; startTop = rect.top;
+        box.style.transform = "none";
+        function onMouseMove(ev) {
+            if (!isDragging) return;
+            const dx = ev.clientX - startX; const dy = ev.clientY - startY;
+            box.style.left = startLeft + dx + "px"; box.style.top = startTop + dy + "px";
+        }
+        function onMouseUp() { isDragging = false; document.removeEventListener("mousemove", onMouseMove); document.removeEventListener("mouseup", onMouseUp); }
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+        e.preventDefault();
+    });
 
     const row = document.createElement("div");
     row.style.display = "flex"; row.style.gap = "8px"; row.style.marginBottom = "8px";
@@ -134,12 +154,14 @@ function createManageDialog(node) {
 
     const select = document.createElement("select");
     select.style.flex = "1"; select.style.background = "#2b2b2b";
-    select.style.color = "#ddd"; select.style.border = "1px solid #555"; select.style.padding = "6px";
+    select.style.color = "#ddd"; select.style.border = "1px solid #555"; // ← FIX ICI
+    select.style.padding = "6px";
     row.appendChild(select);
 
     const refreshBtn = document.createElement("button");
     refreshBtn.textContent = "↻"; refreshBtn.title = "Refresh";
-    refreshBtn.style.padding = "6px 10px"; row.appendChild(refreshBtn);
+    refreshBtn.style.padding = "6px 10px";
+    row.appendChild(refreshBtn);
 
     function fillOptions() {
         select.innerHTML = "";
@@ -149,46 +171,36 @@ function createManageDialog(node) {
             select.disabled = true;
         } else {
             select.disabled = false;
-            presetCache.forEach(p => {
-                const opt = document.createElement("option");
-                opt.text = p.name; opt.value = p.name; select.appendChild(opt);
-            });
+            presetCache.forEach(p => { const opt = document.createElement("option"); opt.text = p.name; opt.value = p.name; select.appendChild(opt); });
             const cur = loadCurrentPresetName(node);
             const idx = presetCache.findIndex(p => p.name === cur);
             select.selectedIndex = idx >= 0 ? idx : 0;
         }
     }
     fillOptions();
+    refreshPresetsCache().then(fillOptions);
+    refreshBtn.onclick = () => { refreshPresetsCache().then(fillOptions); };
 
     const grid = document.createElement("div");
-    grid.style.display = "grid"; grid.style.gridTemplateColumns = "1fr 1fr";
-    grid.style.gap = "8px"; box.appendChild(grid);
+    grid.style.display = "grid"; grid.style.gridTemplateColumns = "1fr 1fr"; grid.style.gap = "8px";
+    box.appendChild(grid);
 
-    function button(label, handler, titleTxt) {
+    function button(label, handler) {
         const b = document.createElement("button");
-        b.textContent = label; if (titleTxt) b.title = titleTxt;
-        b.style.padding = "8px 10px"; b.style.background = "#3a3f44";
-        b.style.color = "#fff"; b.style.border = "1px solid #555"; b.style.borderRadius = "6px";
-        b.addEventListener("click", handler); grid.appendChild(b); return b;
+        b.textContent = label;
+        b.style.padding = "8px 10px";
+        b.style.background = "#3a3f44"; b.style.color = "#fff";
+        b.style.border = "1px solid #555"; b.style.borderRadius = "6px";
+        b.addEventListener("click", handler);
+        grid.appendChild(b);
+        return b;
     }
 
-    // NEW: Apply to node
+    // Apply (remplace "Load")
     button("Apply to node", () => {
         const nm = select.value; if (!nm) return;
         const p = presetCache.find(x => x.name === nm);
-        if (p?.payload) {
-            setNodeValues(node, p.payload);
-            setFooterPresetName(node, nm);
-        }
-    });
-
-    button("Load", async () => {
-        const nm = select.value; if (!nm) return;
-        const p = presetCache.find(x => x.name === nm);
-        if (p?.payload) {
-            setNodeValues(node, p.payload);
-            setFooterPresetName(node, nm);
-        }
+        if (p?.payload) { setNodeValues(node, p.payload); setFooterPresetName(node, nm); }
     });
 
     button("Save (overwrite)", async () => {
@@ -220,6 +232,7 @@ function createManageDialog(node) {
         const neu = prompt("Rename preset:", old); if (!neu || neu === old) return;
         const found = presetCache.find(p => p.name === old);
         if (!found) return;
+        // save-as + delete
         const res1 = await savePreset(neu, found.payload);
         if (!res1?.ok) { alert("Failed to rename (save-as)"); return; }
         const res2 = await deletePreset(old);
@@ -251,7 +264,7 @@ function createManageDialog(node) {
         downloadJSON(p, `flux_preset_${nm}.json`);
     });
 
-    const importBtn = button("Import", () => {
+    button("Import", () => {
         const inp = document.createElement("input");
         inp.type = "file"; inp.accept = ".json,application/json";
         inp.onchange = async () => {
@@ -286,26 +299,37 @@ function createManageDialog(node) {
     close.onclick = () => document.body.removeChild(wrap);
     closeBar.appendChild(close);
 
-    refreshPresetsCache().then(fillOptions);
-    document.body.appendChild(wrap);
+    // fermer en cliquant sur le fond
+    wrap.addEventListener("mousedown", (e) => { if (e.target === wrap) document.body.removeChild(wrap); });
 }
 
-/* ------------ Manage button widget (fixed label) ------------ */
+/* ------------ Manage button widget (keep native frame + bold text) ------------ */
 function ensureManageButton(node) {
-    // Cherche un bouton nommé "manage_presets" pour éviter les doublons
     const exists = node.widgets?.some(w => w.type === "button" && w.name === "manage_presets");
     if (exists) return;
 
-    const btn = node.addWidget("button", "Manage presets…", null, () => {
-        createManageDialog(node);
-    }, { serialize: false });
-
-    // IMPORTANT: garder name = identifiant logique, le libellé est le 2e paramètre ("Manage presets…")
+    const btn = node.addWidget("button", "Manage presets", null, () => { createManageDialog(node); }, { serialize: false });
     btn.name = "manage_presets";
 
-    // Toujours en tout dernier
-    const last = node.widgets.pop();
-    node.widgets.push(last);
+    const origDraw = btn.draw;
+    btn.draw = function (ctx, node2, widgetWidth, y, height) {
+        // rendu natif du bouton (encadré/hover)
+        if (origDraw) origDraw.call(btn, ctx, node2, widgetWidth, y, height);
+        // texte en gras centré
+        const h = height || 24;
+        ctx.save();
+        ctx.font = "700 12px sans-serif";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#ffffff";
+        const label = "Manage presets";
+        const tw = ctx.measureText(label).width;
+        const cx = (widgetWidth - tw) / 2;
+        ctx.fillText(label, Math.max(8, cx), y + h / 2);
+        ctx.restore();
+    };
+
+    // pousser en dernier
+    const last = node.widgets.pop(); node.widgets.push(last);
 }
 
 /* ------------ Register extension ------------ */
@@ -314,7 +338,6 @@ app.registerExtension({
     async beforeRegisterNodeDef(nodeType, nodeData, appRef) {
         if (nodeData?.name !== NODE_CLASS) return;
 
-        // context menu with native submenus
         const orig = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (_, options) {
             if (orig) orig.apply(this, arguments);
@@ -371,7 +394,6 @@ app.registerExtension({
             return options;
         };
 
-        // create headers/footer/manage on node creation
         const origCreated = nodeType.prototype.onNodeCreated;
         nodeType.prototype.onNodeCreated = function () {
             if (origCreated) origCreated.apply(this, arguments);
@@ -384,7 +406,6 @@ app.registerExtension({
         };
     },
 
-    // ensure UI on reopen / paste
     nodeCreated(node) {
         if (node?.comfyClass === NODE_CLASS || node?.type === NODE_CLASS || node?.title === "Flux Settings Pipe") {
             addSectionHeaders(node);
