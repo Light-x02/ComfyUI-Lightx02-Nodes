@@ -47,12 +47,17 @@ Central node that **prepares settings** for **Flux** *or* **SDXL**. It offers tw
 - **Steps & Denoise**: fine control over iteration count and denoising strength.
 - **Guidance & CFG**: manage guidance (written into conditioning) and expose a dedicated **CFG**.
 - **Seed & Noise**: generates a reusable **custom noise generator** and exposes the **seed**.
+- **Colored Section Headers**: section titles in the node are **clickable**; you can change their background color.  
+  - Colors are **saved locally** in your web browser (via localStorage).  
+  - Each header keeps its chosen color between ComfyUI sessions.  
 - **Pipe Output**: returns a full **FLUX_PIPE**, ideal for keeping workflows **clean and modular**.
 
 #### Example Usage
 1. Place **⚙️ Flux/SDXL Settings Pipe** and select **Flux** or **SDXL** using `mode_resolution`.
 2. Choose `sampler_name`, `scheduler`, `steps`, `denoise`. Adjust `guidance` or `cfg` as needed.
-3. Connect the **`pipe`** output to **📤 Settings Pipe Unpack** (to access clean individual outputs).
+3. Click on the **colored section headers** to adjust their background color if desired (saved in your browser).
+4. Connect the **`pipe`** output to **📤 Settings Pipe Unpack** (to access clean individual outputs).
+
 
 ---
 
