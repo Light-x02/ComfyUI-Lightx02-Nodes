@@ -18,9 +18,22 @@ This repository brings together several custom nodes developed to make ComfyUI m
 ---
 
 ## 🧩 Installation
-1. Go to `ComfyUI/custom_nodes/`
-2. `git clone` `https://github.com/Light-x02/ComfyUI-Lightx02-Nodes`
-3. Restart ComfyUI
+
+### Method 1: Install via ComfyUI Manager
+
+2. Go to the **Custom Nodes** section in the interface.
+3. Search for **"Light-x02_Nodes"** and install it directly from the ComfyUI Manager.
+4. **Restart ComfyUI**  
+   Restart ComfyUI to load the node.
+
+### Method 2: Clone the Repository
+1. Open a terminal or command prompt.
+2. Run the following command to clone the repository:
+   ```bash
+   git clone https://github.com/Light-x02/ComfyUI-Lightx02-Nodes.git
+   ```
+3. **Restart ComfyUI**  
+   Once the files are in place, restart ComfyUI to load the node.
 
 ---
 
