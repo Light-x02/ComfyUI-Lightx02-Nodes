@@ -224,5 +224,20 @@ Output will be **1248×832**.
 
 ---
 
+## ⚠️ Notes — Avoid Duplicate Installations
+
+If you already installed the **standalone** versions of these nodes from my other repositories, **please uninstall those standalones** to prevent duplicate registration and conflicts:
+
+- **✂️ Crop Image** — standalone repo: https://github.com/Light-x02/ComfyUI_Crop_Image_By_Lightx02
+- **📝 ComfyUI Image Metadata Nodes** — standalone repo: https://github.com/Light-x02/ComfyUI-Image-Metadata-Nodes
+
+**How to remove duplicates**
+1. Go to your `ComfyUI/custom_nodes/` folder.
+2. Delete the folders for the standalone versions listed above (if present).
+3. Restart ComfyUI.
+
+**Symptoms of duplicates**: nodes appearing twice, “node already registered” errors, or import failures when starting ComfyUI.
+
+
 ## 📄 License
 Unless otherwise stated in the repository, this project is released under the **MIT License**.
