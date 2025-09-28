@@ -22,7 +22,7 @@ This repository brings together several custom nodes developed to make ComfyUI m
 ### Method 1: Install via ComfyUI Manager
 
 2. Go to the **Custom Nodes** section in the interface.
-3. Search for **"Light-x02_Nodes"** and install it directly from the ComfyUI Manager.
+3. Search for **"Light-x02 Nodes"** and install it directly from the ComfyUI Manager.
 4. **Restart ComfyUI**  
    Restart ComfyUI to load the node.
 
