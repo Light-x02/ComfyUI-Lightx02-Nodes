@@ -1,3 +1,5 @@
+⭐ **Give a star, it shines and keeps us motivated! ✨**
+
 # ComfyUI-Lightx02-Nodes
 
 ![ComfyUI](https://img.shields.io/badge/ComfyUI-custom%20nodes-5a67d8)
