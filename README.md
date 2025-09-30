@@ -39,6 +39,11 @@ This repository brings together several custom nodes developed to make ComfyUI m
 
 ---
 
+## Compatibility
+Compatible with the extension [ComfyUI-ImageMetadataExtension](https://github.com/edelvarden/ComfyUI-ImageMetadataExtension). This integration ensures metadata compatibility with **Civitai**, allowing details such as sampler, steps, guidance, prompt, and seed to be correctly captured and displayed on the Civitai platform.
+
+---
+
 ## 🧩 Custom Nodes
 
 <details>
