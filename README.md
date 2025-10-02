@@ -129,6 +129,73 @@ These nodes include a **preset system** (UI button **Manage presets**) that lets
 ---
 
 <details>
+<summary>⚙️ Node Presets Universal</summary>
+
+# Node Presets Universal
+
+## Description
+**Node Presets Universal** is a **ComfyUI extension** that allows you to **save, load, rename, delete, export, and import presets** for **any node** directly via the **right-click context menu**.  
+
+Unlike node-specific preset systems, this extension is **universal**: it works on almost all nodes without requiring code modifications.
+
+⚠️ **Limitation**: Some nodes that rely heavily on JavaScript for dynamic UI (e.g., *Power Lora Loader*) may not be fully compatible.
+
+---
+
+## Features
+
+### Context Menu Integration
+- Adds a **"Presets" submenu** to **all nodes** in ComfyUI.
+- Accessed by right-clicking a node → **Presets**.
+
+### Preset Management
+- **Save Preset…**: Save the current widget values of the node as a preset.
+- **Load Preset…**: Load a previously saved preset into the node.
+- **Delete Preset…**: Permanently delete a saved preset.
+- **Manage…**: Open a **dedicated management dialog** with advanced options.
+
+### Manage Dialog
+A lightweight UI that lets you:
+- **Apply to node**: Load the selected preset onto the node.
+- **Save (overwrite)**: Overwrite the current preset with the node’s values.
+- **Save As…**: Save the current configuration under a new preset name.
+- **Rename…**: Rename a preset without losing its values.
+- **Delete**: Remove the selected preset.
+- **Export (selected)**: Export one preset to JSON.
+- **Export (all)**: Export all presets of a node type to JSON.
+- **Import**: Import presets from JSON files.
+
+### Storage System
+- **One file per node type**: presets are stored per node type in a `.json` file.
+- **Location**: stored under `ComfyUI\User\default\preset_nodes`.
+- Presets are saved differently depending on ComfyUI’s storage mode:
+  - **Server mode** → stored via API.
+  - **Local mode** → stored in browser localStorage.
+
+### Current Preset Tracking
+- The currently applied preset name is stored per node ID in localStorage.
+- This is **cosmetic**: it helps you remember which preset was last used.
+
+---
+
+## Example Workflow
+
+1. Right-click on any node → **Presets → Save preset…**.  
+2. Give it a name (e.g., *High Quality Sampling*).  
+3. Later, right-click the node → **Presets → Load preset… → High Quality Sampling**.  
+4. Use **Manage…** for advanced actions like renaming, exporting, or batch importing presets.
+
+---
+
+## Limitations
+- Some JavaScript-based nodes with dynamic UIs (e.g. *Power Lora Loader*) may not correctly serialize/restore all widget values.  
+- Only widgets with standard serializable values (combo, int, float, text, checkbox, etc.) are supported. Buttons, separators, and UI-only widgets are ignored.  
+
+</details>
+
+---
+
+<details>
 <summary>📝 ComfyUI Image Metadata Nodes</summary>
 
 ### ComfyUI Image Metadata Nodes
