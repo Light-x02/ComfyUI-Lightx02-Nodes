@@ -1,4 +1,6 @@
-﻿import { app } from "../../scripts/app.js";
+// Developed by Light-x02
+// https://github.com/Light-x02/ComfyUI-Lightx02-Node
+import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
 (function () {
@@ -515,4 +517,5 @@ import { api } from "../../scripts/api.js";
             };
         },
     });
+
 })();
