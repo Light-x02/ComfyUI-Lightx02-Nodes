@@ -11,10 +11,6 @@ from comfy.comfy_types import IO, ComfyNodeABC, InputTypeDict
 from comfy.cli_args import args
 import folder_paths
 
-# Image Metadata Loader and Saver Nodes
-# Developed by Light_x02
-# These nodes allow loading and saving images while preserving metadata.
-
 # Node to load image with metadata
 class ImageMetadataLoader(ComfyNodeABC):
     @classmethod
@@ -200,4 +196,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageMetadataSaver": "Image Metadata Saver"
 
 }
+
 
