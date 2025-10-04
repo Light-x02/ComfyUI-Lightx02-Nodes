@@ -91,7 +91,7 @@ class FluxSettingsPipe:
     RETURN_TYPES = ("FLUX_PIPE", "LATENT", "INT", "INT", "SAMPLER", "SIGMAS", "NOISE", "INT", "FLOAT", "CONDITIONING",)
     RETURN_NAMES  = ("pipe",      "LATENT","width","height","sampler","sigmas","noise","seed","cfg","conditioning",)
     FUNCTION = "execute"
-    CATEGORY = "lightx02/utilities"
+    CATEGORY = "💡Lightx02/utilities"
 
     def execute(
         self,
@@ -188,7 +188,7 @@ class FluxPipeUnpack:
     RETURN_TYPES = ("FLUX_PIPE","LATENT","INT","INT","SAMPLER","SIGMAS","NOISE","INT","FLOAT","CONDITIONING",)
     RETURN_NAMES  = ("pipe","LATENT","width","height","sampler","sigmas","noise","seed","cfg","conditioning",)
     FUNCTION = "unpack"
-    CATEGORY = "lightx02/utilities"
+    CATEGORY = "💡Lightx02/utilities"
 
     def unpack(self, pipe):
         latent = pipe.get("latent", {"samples": torch.zeros([1,4,64,64])})
@@ -312,4 +312,5 @@ if PromptServer and web and hasattr(PromptServer, "instance"):
             return web.json_response({"ok": False, "error": "missing name"}, status=400)
         _delete_preset(name)
         return web.json_response({"ok": True})
+
 
