@@ -1,4 +1,6 @@
-﻿import { app } from "../../scripts/app.js";
+// Developed by Light-x02
+// https://github.com/Light-x02/ComfyUI-Lightx02-Node
+import { app } from "../../scripts/app.js";
 
 (function () {
     const NODE_CLASS = "FluxSettingsPipe"; 
@@ -457,4 +459,5 @@
 
     Integration.register();
 })();
+
 
