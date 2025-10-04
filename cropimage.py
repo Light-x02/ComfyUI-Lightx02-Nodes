@@ -32,7 +32,7 @@ class cropImage:
     RETURN_TYPES = ("IMAGE", "MASK")
     RETURN_NAMES = ("image", "mask")
     FUNCTION = 'auto_crop_images'
-    CATEGORY = 'lightx02/utilities'
+    CATEGORY = '💡Lightx02/utilities'
 
     def auto_crop_images(self, crop_top, crop_bottom, crop_left, crop_right, rotation, image=None, mask=None):
         def tensor2pil(tensor):
@@ -89,4 +89,5 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "cropImage": "Crop Image"
+
 }
