@@ -1,3 +1,6 @@
+# Developed by Light_x02
+# https://github.com/Light-x02/ComfyUI-Lightx02-Node
+
 import os
 import json
 import datetime
@@ -197,3 +200,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ImageMetadataSaver": "Image Metadata Saver"
 
 }
+
