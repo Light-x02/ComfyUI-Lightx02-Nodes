@@ -1,3 +1,4 @@
+# Developed by Light_x02
 import numpy as np
 from PIL import Image, ImageOps
 import torch
@@ -91,3 +92,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "cropImage": "Crop Image"
 
 }
+
