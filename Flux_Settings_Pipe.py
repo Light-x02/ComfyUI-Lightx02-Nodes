@@ -1,3 +1,5 @@
+# Developed by Light_x02
+# https://github.com/Light-x02/ComfyUI-Lightx02-Node
 import os
 import json
 import torch
@@ -312,5 +314,6 @@ if PromptServer and web and hasattr(PromptServer, "instance"):
             return web.json_response({"ok": False, "error": "missing name"}, status=400)
         _delete_preset(name)
         return web.json_response({"ok": True})
+
 
 
