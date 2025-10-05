@@ -321,7 +321,8 @@ Output will be **1248×832**.
 
 # 🔗 Pipe Hub
 
-![🔗 Pipe Hub](assets/040025.mp4)
+Video: ![🔗 Pipe Hub](assets/040025.mp4)
+![🔗 Pipe Hub](assets/041034.png)
 
 ## 🧩 Description
 
