@@ -1,8 +1,6 @@
 ﻿// web/js/pipe_hub.js — Pipe Hub UI v7.4
-// - Entrées: any (*) ; Sorties: any (*)  ➜ compatible avec AnyType("*") côté Python
-// - Auto-extend/retract propre, labels uniques (IMAGE, IMAGE_1, ...)
-// - Traversée EXHAUSTIVE de l’aval: multi-liens, Reroute & co, Set ➜ tous les Get
-// - Bouton "Fix" + entrée de menu: met à jour tout le sous-réseau connecté, même après Set/Get
+// Developed by Light-x02
+// https://github.com/Light-x02/ComfyUI-Lightx02-Node
 
 import { app } from "/scripts/app.js";
 
@@ -550,3 +548,4 @@ import { app } from "/scripts/app.js";
         }, 700);
     }, 300);
 })();
+
