@@ -321,6 +321,8 @@ Output will be **1248×832**.
 
 # 🔗 Pipe Hub
 
+![🔗 Pipe Hub](assets/040025.mp4)
+
 ## 🧩 Description
 
 The **🔗 Pipe Hub** is a universal node designed to **carry and merge any type of data** within ComfyUI.\
