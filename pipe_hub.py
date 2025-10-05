@@ -1,5 +1,5 @@
-﻿# Pipe Hub - Developed by Light-x02
-# Sorties en AnyType -> accepte absolument tous les types
+# Developed by Light-x02
+# https://github.com/Light-x02/ComfyUI-Lightx02-Node
 import typing as _t
 
 try:
@@ -58,3 +58,4 @@ class PipeHub:
 
 NODE_CLASS_MAPPINGS = {"PipeHub": PipeHub}
 NODE_DISPLAY_NAME_MAPPINGS = {"PipeHub": "🔗 Pipe Hub"}
+
