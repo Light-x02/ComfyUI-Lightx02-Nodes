@@ -191,10 +191,11 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "ImageMetadataLoader": "Image Metadata Loader",
-    "ImageMetadataSaver": "Image Metadata Saver"
+    "ImageMetadataLoader": "📝 Image Metadata Loader",
+    "ImageMetadataSaver": "📝✅ Image Metadata Saver"
 
 }
+
 
 
 
