@@ -1,7 +1,10 @@
 # Developed by Light-x02
 # https://github.com/Light-x02/ComfyUI-Lightx02-Node
+
+# === SECTION: IMPORTS ===
 import os
 import json
+import re
 import torch
 import comfy.model_management
 import comfy.samplers
@@ -10,7 +13,7 @@ import node_helpers
 try:
     from nodes import MAX_RESOLUTION
 except Exception:
-    MAX_RESOLUTION = 8192  # safe fallback if import fails
+    MAX_RESOLUTION = 8192
 
 # Optional server imports (for presets API)
 try:
@@ -21,6 +24,7 @@ except Exception:
     PromptServer = None
 
 
+# === SECTION: SAMPLING UTILITIES ===
 class _NoiseRandom:
     def __init__(self, seed: int):
         self.seed = seed
@@ -31,17 +35,18 @@ class _NoiseRandom:
         return comfy.sample.prepare_noise(latent_image, self.seed, batch_inds)
 
 
+# === SECTION: NODE: FluxSettingsPipe ===
 class FluxSettingsPipe:
-    """Core settings pipe for Flux/SDXL. If this module fails to import, check server logs.
-    """
+    """Core settings pipe for Flux/SDXL."""
+
     def __init__(self):
         self.device = comfy.model_management.intermediate_device()
 
+    # -- INPUT_TYPES --
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                # FLUX (Flux) square-ish/defaults
                 "resolution_flux": (
                     [
                         "1056x2112 (0.5)","1056x2016 (0.52)","1152x2016 (0.57)","1152x1920 (0.6)",
@@ -54,10 +59,7 @@ class FluxSettingsPipe:
                     ],
                     {"default": "1536x1536 (1.0)"}
                 ),
-                # Toggle Flux/SDXL (True->Flux, False->SDXL)
                 "mode_resolution": ("BOOLEAN", {"default": True, "label_on": "Flux", "label_off": "SDXL"}),
-
-                # SDXL typical set
                 "resolution_sdxl": (
                     [
                         "704x1408 (0.5)","704x1344 (0.52)","768x1344 (0.57)","768x1280 (0.6)",
@@ -70,7 +72,6 @@ class FluxSettingsPipe:
                     ],
                     {"default": "1024x1024 (1.0)"}
                 ),
-
                 "flip_orientation": ("BOOLEAN", {"default": False, "label_on": "Swap W/H", "label_off": "Default"}),
                 "batch_size": ("INT", {"default": 1, "min": 1, "max": 4096}),
                 "width_override": ("INT", {"default": 0, "min": 0, "max": MAX_RESOLUTION, "step": 8}),
@@ -89,16 +90,17 @@ class FluxSettingsPipe:
             }
         }
 
-    # Added cfg in outputs too
+    # -- OUTPUTS & META --
     RETURN_TYPES = ("FLUX_PIPE", "LATENT", "INT", "INT", "SAMPLER", "SIGMAS", "NOISE", "INT", "FLOAT", "CONDITIONING",)
     RETURN_NAMES  = ("pipe",      "LATENT","width","height","sampler","sigmas","noise","seed","cfg","conditioning",)
     FUNCTION = "execute"
     CATEGORY = "💡Lightx02/utilities"
 
+    # -- EXECUTE --
     def execute(
         self,
         resolution_flux,
-        mode_resolution=True,   # True -> Flux, False -> SDXL
+        mode_resolution=True,
         resolution_sdxl="1024x1024 (1.0)",
         flip_orientation=False,
         batch_size=1,
@@ -114,29 +116,21 @@ class FluxSettingsPipe:
         conditioning=None,
         noise_seed=0,
     ):
-        # Pick active resolution by mode
         selected = resolution_flux if bool(mode_resolution) else resolution_sdxl
         width_str, height_str = selected.split(" ")[0].split("x")
 
-        # Apply overrides
         width = width_override if width_override > 0 else int(width_str)
         height = height_override if height_override > 0 else int(height_str)
 
-        # Flip orientation (swap W/H)
         if flip_orientation:
             width, height = height, width
 
-        # Clamp
         width  = max(8, min(width,  MAX_RESOLUTION))
         height = max(8, min(height, MAX_RESOLUTION))
 
-        # Empty latent
         latent = torch.zeros([batch_size, 4, height // 8, width // 8], device=self.device)
-
-        # Sampler object
         sampler = comfy.samplers.sampler_object(sampler_name)
 
-        # Scheduler sigmas
         sigmas = torch.FloatTensor([])
         if model is not None:
             total_steps = steps if denoise >= 1.0 else int(steps / denoise) if denoise > 0 else 0
@@ -145,27 +139,20 @@ class FluxSettingsPipe:
                 sigmas = comfy.samplers.calculate_sigmas(model_sampling, scheduler, total_steps).cpu()
                 if sigmas.shape[-1] >= (steps + 1):
                     sigmas = sigmas[-(steps + 1):]
-        # Attach metadata to sigmas so it can be unpacked later (only what’s useful elsewhere)
         try:
             sigmas_out = sigmas.clone() if torch.is_tensor(sigmas) else torch.FloatTensor([])
-            setattr(sigmas_out, "_meta", {
-                "steps": int(steps),
-                "denoise": float(denoise),
-            })
+            setattr(sigmas_out, "_meta", {"steps": int(steps), "denoise": float(denoise)})
         except Exception:
             sigmas_out = sigmas
 
-        # Noise (for SamplerCustom*) and seed (for native KSampler)
         noise = _NoiseRandom(noise_seed)
         seed_out = int(noise_seed)
 
-        # Flux guidance on conditioning (keep 'guidance' in cond values)
         if conditioning is not None:
             conditioning_out = node_helpers.conditioning_set_values(conditioning, {"guidance": float(guidance)})
         else:
             conditioning_out = conditioning
 
-        # Bundle in pipe
         pipe = {
             "latent": {"samples": latent},
             "width": width,
@@ -182,6 +169,7 @@ class FluxSettingsPipe:
         return (pipe, {"samples": latent}, width, height, sampler, sigmas_out, noise, seed_out, float(cfg), conditioning_out)
 
 
+# === SECTION: NODE: FluxPipeUnpack ===
 class FluxPipeUnpack:
     @classmethod
     def INPUT_TYPES(cls):
@@ -205,7 +193,7 @@ class FluxPipeUnpack:
         return (pipe, latent, width, height, sampler, sigmas, noise, seed, cfg, conditioning)
 
 
-# ---- Node mappings
+# === SECTION: NODE REGISTRATION ===
 NODE_CLASS_MAPPINGS = {
     "FluxSettingsPipe": FluxSettingsPipe,
     "FluxPipeUnpack": FluxPipeUnpack,
@@ -217,26 +205,25 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 }
 
 
-# -------------------------------
-# Presets API
-# -------------------------------
-import re
-
+# === SECTION: PRESETS API (FILES & ROUTES) ===
 PRESET_DIR = os.path.join(os.path.dirname(__file__), "presets")
-LEGACY_FILE = os.path.join(PRESET_DIR, "flux_presets.json")  # ancien format "tout-en-un"
+LEGACY_FILE = os.path.join(PRESET_DIR, "flux_presets.json")
+
 
 def _ensure_preset_dir():
     os.makedirs(PRESET_DIR, exist_ok=True)
 
+
 def _safe_name(name: str) -> str:
-    # garde lettres/chiffres/espace/_-. ; remplace le reste par _
     name = (name or "").strip()
     name = re.sub(r"[^A-Za-z0-9 _.-]", "_", name)
     return name or "preset"
 
+
 def _preset_path(name: str) -> str:
     _ensure_preset_dir()
     return os.path.join(PRESET_DIR, f"{_safe_name(name)}.json")
+
 
 def _list_presets():
     _ensure_preset_dir()
@@ -244,7 +231,7 @@ def _list_presets():
     for fn in os.listdir(PRESET_DIR):
         if not fn.lower().endswith(".json"):
             continue
-        if fn == "flux_presets.json":  # ignorer l'ancien conteneur
+        if fn == "flux_presets.json":
             continue
         path = os.path.join(PRESET_DIR, fn)
         try:
@@ -257,19 +244,20 @@ def _list_presets():
     items.sort(key=lambda x: x["name"].lower())
     return items
 
+
 def _save_preset(name: str, payload: dict):
     path = _preset_path(name)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
+
 
 def _delete_preset(name: str):
     path = _preset_path(name)
     if os.path.exists(path):
         os.remove(path)
 
+
 def _migrate_legacy_file_if_any():
-    """Si un ancien flux_presets.json (avec {name: payload}) existe,
-    on migre chaque entrée dans son propre fichier, puis on renomme l'ancien."""
     try:
         if os.path.exists(LEGACY_FILE):
             with open(LEGACY_FILE, "r", encoding="utf-8") as f:
@@ -278,17 +266,15 @@ def _migrate_legacy_file_if_any():
                 for k, v in data.items():
                     if isinstance(v, dict):
                         _save_preset(k, v)
-            # archiver l'ancien fichier pour ne plus le recharger
             os.rename(LEGACY_FILE, LEGACY_FILE + ".migrated.bak")
             print("[FluxSettingsPipe] migrated legacy flux_presets.json -> individual files")
     except Exception as e:
         print("[FluxSettingsPipe] legacy migration error:", e)
 
-# Enregistrer les routes HTTP
+
 if PromptServer and web and hasattr(PromptServer, "instance"):
     routes = PromptServer.instance.routes
 
-    # Migration à l'import
     _ensure_preset_dir()
     _migrate_legacy_file_if_any()
 
@@ -314,7 +300,3 @@ if PromptServer and web and hasattr(PromptServer, "instance"):
             return web.json_response({"ok": False, "error": "missing name"}, status=400)
         _delete_preset(name)
         return web.json_response({"ok": True})
-
-
-
-
