@@ -199,9 +199,7 @@ import { app } from "../../scripts/app.js";
                     },
                     { serialize: false }
                 );
-                // mark as header (do not change w.name which is the visible label)
                 w.__fluxHeaderMarker = marker;
-                // move before reference widget if present
                 const idx = node.widgets.findIndex((x) => x.name === beforeWidgetName);
                 if (idx >= 0) {
                     const last = node.widgets.pop();
@@ -219,11 +217,74 @@ import { app } from "../../scripts/app.js";
                 ctx.fillStyle = w._fg;
                 ctx.font = "600 12px sans-serif";
                 ctx.textBaseline = "middle";
-                const tw = ctx.measureText(label).width,
-                    cx = (widgetWidth - tw) / 2;
+                const tw = ctx.measureText(label).width;
+                const cx = (widgetWidth - tw) / 2;
                 ctx.fillText(label, Math.max(8, cx), y + 13);
                 ctx.restore();
             };
+        }
+
+        function drawRoundedRect(ctx, x, y, w, h, r, fillStyle, strokeStyle) {
+            ctx.save();
+            ctx.beginPath();
+            const rr = Math.min(r, h / 2, w / 2);
+            ctx.moveTo(x + rr, y);
+            ctx.lineTo(x + w - rr, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+            ctx.lineTo(x + w, y + h - rr);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+            ctx.lineTo(x + rr, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+            ctx.lineTo(x, y + rr);
+            ctx.quadraticCurveTo(x, y, x + rr, y);
+            if (fillStyle) { ctx.fillStyle = fillStyle; ctx.fill(); }
+            if (strokeStyle) { ctx.lineWidth = 2; ctx.strokeStyle = strokeStyle; ctx.stroke(); }
+            ctx.restore();
+        }
+
+        // Toggle "apply_guidance_cfg" sans libellé, avec contour coloré
+        function styleGuidanceToggleNoName(node) {
+            const w = node.widgets?.find((x) => x.name === "apply_guidance_cfg");
+            if (!w) return;
+
+            w.computeSize = () => [200, 26];
+            const origDraw = w.draw;
+
+            w.draw = function (ctx, node2, widgetWidth, y, height) {
+                const h = height || 26;
+                const isOn = !!w.value;
+
+                const fill = isOn ? "rgba(56,161,105,0.16)" : "rgba(229,62,62,0.16)"; // vert / rouge léger
+                const stroke = isOn ? "#38A169" : "#E53E3E";                            // contour vert / rouge
+
+                // fond + contour
+                drawRoundedRect(ctx, 0.5, y + 2.5, widgetWidth - 1, h - 5, 6, fill, stroke);
+
+                // toggle natif sans le nom de la clé
+                const savedName = w.name;
+                w.name = "";
+                if (origDraw) origDraw.call(w, ctx, node2, widgetWidth, y, h);
+                w.name = savedName;
+
+                // libellé centré
+                const label = isOn ? "Apply Guidance+CFG" : "Disable Guidance+CFG";
+                ctx.save();
+                ctx.font = "700 12px sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.fillStyle = "#ffffff";
+                const tw = ctx.measureText(label).width;
+                const cx = (widgetWidth - tw) / 2;
+                ctx.fillText(label, Math.max(8, cx), y + h / 2);
+                ctx.restore();
+            };
+        }
+
+        function moveWidgetAfterIndex(node, widget, targetIndex) {
+            if (!widget || targetIndex < 0) return;
+            const oldIndex = node.widgets.indexOf(widget);
+            if (oldIndex < 0) return;
+            node.widgets.splice(oldIndex, 1);
+            node.widgets.splice(Math.min(targetIndex + 1, node.widgets.length), 0, widget);
         }
 
         function addSectionHeaders(node) {
@@ -233,15 +294,29 @@ import { app } from "../../scripts/app.js";
 
             const modeWidget = node.widgets?.find((w) => w.name === "use_flux" || w.name === "mode_resolution");
             if (modeWidget) modeWidget.name = "mode_resolution";
-            const headerIdx = node.widgets.findIndex((w) => w.__fluxHeaderMarker === "__hdr_LATENT");
+            const latentHeaderIdx = node.widgets.findIndex((w) => w.__fluxHeaderMarker === "__hdr_LATENT");
             const wMode = node.widgets.find((w) => w.name === "mode_resolution");
-            if (headerIdx >= 0 && wMode) {
-                node.widgets = node.widgets.filter((w) => w !== wMode);
-                node.widgets.splice(headerIdx + 1, 0, wMode);
-            }
+            if (latentHeaderIdx >= 0 && wMode) moveWidgetAfterIndex(node, wMode, latentHeaderIdx);
 
             insertHeader(node, "sampler_name", "Settings", "#2B6CB0", "__hdr_SETTINGS");
-            insertHeader(node, "guidance", "Flux Guidance", "#2F855A", "__hdr_GUIDE");
+
+            const hasToggle = !!node.widgets?.find((w) => w.name === "apply_guidance_cfg");
+            const guidanceAnchor = hasToggle ? "apply_guidance_cfg" : "guidance";
+            insertHeader(node, guidanceAnchor, "Flux Guidance", "#2F855A", "__hdr_GUIDE");
+
+            const guideHeaderIdx = node.widgets.findIndex((w) => w.__fluxHeaderMarker === "__hdr_GUIDE");
+            const wToggle = node.widgets.find((w) => w.name === "apply_guidance_cfg");
+            const wGuidance = node.widgets.find((w) => w.name === "guidance");
+            if (guideHeaderIdx >= 0 && wToggle) {
+                moveWidgetAfterIndex(node, wToggle, guideHeaderIdx);
+                styleGuidanceToggleNoName(node);
+            }
+            if (wToggle && wGuidance) {
+                const idxToggle = node.widgets.indexOf(wToggle);
+                const idxGuid = node.widgets.indexOf(wGuidance);
+                if (idxGuid < idxToggle) moveWidgetAfterIndex(node, wGuidance, idxToggle);
+            }
+
             insertHeader(node, "noise_seed", "Random Noise", "#B7791F", "__hdr_NOISE");
 
             node.__fluxHeadersAdded = true;
@@ -250,6 +325,8 @@ import { app } from "../../scripts/app.js";
 
         return { insertHeader, addSectionHeaders };
     })();
+
+
 
     // =============================================================
     // # SECTION: Footer (shows current preset name)
