@@ -80,6 +80,14 @@ class FluxSettingsPipe:
                 "scheduler": (comfy.samplers.SCHEDULER_NAMES, ),
                 "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
                 "denoise": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+
+                # Interrupteur qui (dés)active l'influence de guidance + cfg
+                "apply_guidance_cfg": ("BOOLEAN", {
+                    "default": True,
+                    "label_on":  "Apply Guidance+CFG",
+                    "label_off": "Disable Guidance+CFG"
+                }),
+
                 "guidance": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 100.0, "step": 0.1}),
                 "cfg": ("FLOAT", {"default": 4.5, "min": 0.0, "max": 30.0, "step": 0.1}),
                 "noise_seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
@@ -110,6 +118,7 @@ class FluxSettingsPipe:
         scheduler="karras",
         steps=20,
         denoise=1.0,
+        apply_guidance_cfg=True,
         guidance=3.5,
         cfg=4.5,
         model=None,
@@ -148,8 +157,12 @@ class FluxSettingsPipe:
         noise = _NoiseRandom(noise_seed)
         seed_out = int(noise_seed)
 
-        if conditioning is not None:
-            conditioning_out = node_helpers.conditioning_set_values(conditioning, {"guidance": float(guidance)})
+        # Application conditionnelle Guidance/CFG
+        guidance_eff = float(guidance) if apply_guidance_cfg else 0.0
+        cfg_eff = float(cfg) if apply_guidance_cfg else 0.0
+
+        if conditioning is not None and apply_guidance_cfg:
+            conditioning_out = node_helpers.conditioning_set_values(conditioning, {"guidance": guidance_eff})
         else:
             conditioning_out = conditioning
 
@@ -162,11 +175,14 @@ class FluxSettingsPipe:
             "noise": noise,
             "seed": seed_out,
             "conditioning": conditioning_out,
-            "cfg": float(cfg),
+            "cfg": cfg_eff,
             "mode": ("FLUX" if bool(mode_resolution) else "SDXL"),
+            "guidance_enabled": bool(apply_guidance_cfg),
         }
 
-        return (pipe, {"samples": latent}, width, height, sampler, sigmas_out, noise, seed_out, float(cfg), conditioning_out)
+        return (pipe, {"samples": latent}, width, height, sampler, sigmas_out, noise, seed_out, cfg_eff, conditioning_out)
+
+
 
 
 # === SECTION: NODE: FluxPipeUnpack ===
