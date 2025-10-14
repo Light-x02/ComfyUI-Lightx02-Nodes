@@ -196,6 +196,63 @@ A lightweight UI that lets you:
 ---
 
 <details>
+<summary>🎨 Link Colors (I/O)</summary>
+
+# 🎨 Link Colors (I/O) — Quick Explanation
+
+## What does it do?
+
+This extension colors the **workflow links** based on the **type of the output** and **input**, then falls back to ComfyUI’s default color if nothing is defined. The rendering remains faithful to the ComfyUI/LiteGraph color palette.
+
+---
+
+## How the color is chosen
+
+Order of resolution (from most specific to most generic):
+
+1. **Color of the output type** (global mapping `LGraphCanvas.link_type_colors`).
+2. **Color of the input type** (same mapping).
+3. **Color provided by the renderer** (`renderLink`, if present) as a fallback.
+4. **`LiteGraph.LINK_COLOR`**: default color (green) if nothing else is found.
+
+> Note: “generic” types (`*`, `ANY`, etc.) are not blended; the most specific available color is preferred.
+
+---
+
+## Why this extension?
+
+In some graphs, the link color stayed stuck with the **default color** when the path passed through “generic” nodes (e.g. **Reroute**, **Any Switch**/**Any**), even if the actual source was a specific type (e.g. **VAE**). This extension fixes that by evaluating the **actual output and input** of each link, **prioritizing specific types**, and avoiding mixing with generic ones. This way, the link correctly inherits a **color consistent with its real type** instead of staying on the fallback.
+
+---
+
+## On/Off without side effects
+
+- A context menu item (right-click anywhere) "**🎨 Enable Link Colors (I/O)**" allows you to toggle the feature.
+- **ON**: the patch attaches to `renderLink` and applies the logic above.
+- **OFF**: the patch detaches and **ComfyUI returns to its original rendering**.
+
+> The state is saved in `localStorage` (`linkcolors_enabled`) and persists between sessions.
+
+---
+
+## Summary
+
+- **Respects** the global ComfyUI palette (including the **default green**).
+- **I/O-aware**: considers both input and output types.
+- **Reversible**: toggle that **restores native behavior** when disabled.
+- **Persistent**: your preference is automatically saved.
+
+---
+
+### Example Before/After
+
+[🎥 Watch the demo on YouTube](https://www.youtube.com/watch?v=bMu1h7bma7U)
+
+</details>
+
+---
+
+<details>
 <summary>📝 ComfyUI Image Metadata Nodes</summary>
 
 ### ComfyUI Image Metadata Nodes
