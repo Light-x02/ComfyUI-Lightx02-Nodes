@@ -129,7 +129,7 @@ import { app } from "/scripts/app.js";
             const options = ORIGINAL_MENU ? ORIGINAL_MENU.apply(this, arguments) : [];
             options.push(null);
             options.push({ content: "Lightx02", disabled: true });
-            options.push({ content: `${State.enabled ? "✓" : "☐"} Enable Link Colors (I/O)`, callback: () => toggle() });
+            options.push({ content: `${State.enabled ? "✓" : "☐"} 🎨 Link Colors (I/O)`, callback: () => toggle() });
             options.push(null);
             return options;
         };
@@ -144,3 +144,4 @@ import { app } from "/scripts/app.js";
         },
     });
 })();
+
