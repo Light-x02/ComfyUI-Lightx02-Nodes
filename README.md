@@ -246,7 +246,7 @@ In some graphs, the link color stayed stuck with the **default color** when the 
 
 ### Example Before/After
 
-[🎥 Watch the demo on YouTube](https://www.youtube.com/watch?v=bMu1h7bma7U)
+[🎥 Watch the demo on YouTube](https://www.youtube.com/watch?v=_RBKrX7o9zQ)
 
 </details>
 
