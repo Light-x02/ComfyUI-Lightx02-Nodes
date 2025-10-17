@@ -1,3 +1,6 @@
+﻿# Developed by Light-x02
+# https://github.com/Light-x02/ComfyUI-Lightx02-Node
+
 import os
 import json
 import re
@@ -207,3 +210,4 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "LMMExtractPromptsNode": "📝 LMM Extract Prompts",
 }
+
