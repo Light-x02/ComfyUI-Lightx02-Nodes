@@ -510,6 +510,41 @@ Thanks to this compatibility:
 
 ---
 
+<details>
+<summary>📝 LMM Extract Prompts</summary>
+
+**Purpose**  
+ComfyUI node that interfaces with **Local Media Manager** by **Firetheft** to extract:
+- **positive_prompt** (with `<lora:...>` tags removed),
+- **negative_prompt** (with `<lora:...>` tags removed),
+- **info** (only `<lora:...>` tags + the section starting at `Steps:`).
+
+> Connects to Firetheft’s **Local Media Manager** node:  
+> https://github.com/Firetheft/ComfyUI_Local_Media_Manager
+
+---
+
+## Connection
+- **Input**: `paths` (connect the **`paths`** output from the *Local Media Manager* node).
+- **Outputs**:  
+  - `positive_prompt : STRING`  
+  - `negative_prompt : STRING`  
+  - `info : STRING`
+
+---
+
+## Behavior
+- Removes all `<lora:...>` tags from **positive/negative** prompts.
+- `info` **keeps** `<lora:...>` tags and includes only the `Steps: ...` block (sampler, steps, cfg, seed, model, VAE, hashes, etc.).
+- Multi-selection: concatenates prompts from multiple images.
+- Ignores non-image items.
+
+![Node preview](assets/191927.png)
+
+</details>
+
+---
+
 ## ⚠️ Notes — Avoid Duplicate Installations
 
 If you already installed the **standalone** versions of these nodes from my other repositories, **please uninstall those standalones** to prevent duplicate registration and conflicts:
