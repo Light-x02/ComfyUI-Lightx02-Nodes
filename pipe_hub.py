@@ -21,7 +21,7 @@ def _inherit_get(pipe, i: int):
     return None
 
 class PipeHub:
-    CATEGORY = "💡Lightx02/utilities"
+    CATEGORY = "💡Lightx02/Pipes"
 
     @classmethod
     def INPUT_TYPES(cls):
