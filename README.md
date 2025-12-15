@@ -129,6 +129,43 @@ These nodes include a **preset system** (UI button **Manage presets**) that lets
 ---
 
 <details>
+<summary>🧱 Universal Latent Settings (FLUX / SDXL / Z-image)</summary>
+
+### 🧱 Universal Latent Settings (FLUX / SDXL / Z-image)
+
+#### Description
+A single **latent-only** node that generates an **empty LATENT** at the correct size, with a clean UI designed to quickly switch between **FLUX**, **SDXL**, and the new **Z-image** resolution sets.
+
+The resolution list is dynamic thanks to JavaScript:
+- The **Model resolution** dropdown lets you choose the model family.
+- The **Resolution** dropdown updates instantly with the matching list.
+
+---
+
+#### Inputs
+- **model_resolution**: `FLUX`, `SDXL`, `Z-image (1024)`, `Z-image (1280)`, `Z-image (1536)`
+- **resolution**: list dynamically filtered according to the selected model
+- **flip_orientation**: swaps width/height
+- **batch_size**: latent batch size
+- **width_override / height_override**: optional manual override (takes priority over the selected resolution)
+
+---
+
+#### Outputs
+- **LATENT**
+- **width**
+- **height**
+
+---
+
+#### Notes
+- The dynamic UI is handled by the script located in the extension’s `js/` folder.
+
+</details>
+
+---
+
+<details>
 <summary>⚙️ Node Presets Universal</summary>
 
 # Node Presets Universal
