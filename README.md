@@ -133,6 +133,8 @@ These nodes include a **preset system** (UI button **Manage presets**) that lets
 
 ### 🧱 Universal Latent Settings (FLUX / SDXL / Z-image)
 
+![Universal Latent Settings](assets/13867634.png)
+
 #### Description
 A single **latent-only** node that generates an **empty LATENT** at the correct size, with a clean UI designed to quickly switch between **FLUX**, **SDXL**, and the new **Z-image** resolution sets.
 
@@ -414,6 +416,8 @@ Output will be **1248×832**.
 <summary>🔗 Pipe 5 -30 CH Any</summary>
 
 ### 🔗 Pipe 5 -30 CH Any
+
+![Pipe 5 -30 CH Any](assets/43876789.png)
 
 #### Description
 These four **Pipe** nodes are designed to carry and propagate **any type of data** through a workflow using a single, clean connection.
