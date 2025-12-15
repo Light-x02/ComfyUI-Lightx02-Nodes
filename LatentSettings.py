@@ -96,4 +96,4 @@ class LatentSettings:
 
 
 NODE_CLASS_MAPPINGS = {"LatentSettings": LatentSettings}
-NODE_DISPLAY_NAME_MAPPINGS = {"LatentSettings": "🧱 Latent Settings (Flux/SDXL)"}
+NODE_DISPLAY_NAME_MAPPINGS = {"LatentSettings": "❌ (OLD) Latent Settings (Flux/SDXL)"}
