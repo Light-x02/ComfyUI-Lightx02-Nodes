@@ -101,6 +101,7 @@ function firstSelectable(values) {
     return (values && values[0]) || "";
 }
 
+// ----- SECTION: Helpers -----
 function groupPortraitSquareLandscape(rawList) {
     const portrait = [];
     const square = [];
@@ -128,9 +129,9 @@ function groupPortraitSquareLandscape(rawList) {
     landscape.sort((a, b) => {
         const ra = a.w / a.h;
         const rb = b.w / b.h;
-        if (rb !== ra) return rb - ra;
-        if (b.w !== a.w) return b.w - a.w;
-        return b.h - a.h;
+        if (ra !== rb) return ra - rb;
+        if (a.w !== b.w) return a.w - b.w;
+        return a.h - b.h;
     });
 
     square.sort((a, b) => {
@@ -146,6 +147,7 @@ function groupPortraitSquareLandscape(rawList) {
 
     return out.length ? out : (rawList || []);
 }
+
 
 function normalizeModel(model) {
     const m = String(model || "Z-image (1024)");
