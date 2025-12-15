@@ -411,6 +411,48 @@ Output will be **1248×832**.
 ---
 
 <details>
+<summary>🔗 Pipe 5 -30 CH Any</summary>
+
+### 🔗 Pipe 5 -30 CH Any
+
+#### Description
+These four **Pipe** nodes are designed to carry and propagate **any type of data** through a workflow using a single, clean connection.
+
+They are ideal for keeping graphs readable by grouping multiple signals into one structure, then forwarding everything downstream via the **`pipe` output**.
+
+They are also **compatible with Subgraphs**, making them useful for modular workflows where you want to pass a whole “bundle” of data across graph boundaries.
+
+---
+
+#### Nodes Included
+- **Pipe 5 CH Any**
+- **Pipe 10 CH Any**
+- **Pipe 20 CH Any**
+- **Pipe 30 CH Any**
+
+---
+
+#### How It Works
+- Each node provides:
+  - one main **`pipe`** input and output (to propagate the bundle),
+  - multiple **`any`** channels (5 / 10 / 20 / 30) to carry any data type (`IMAGE`, `LATENT`, `MODEL`, `VAE`, `MASK`, `CONDITIONING`, etc.).
+- You can:
+  - inject data into any channel,
+  - forward everything through **`pipe`**,
+  - retrieve the same channels later in the workflow by connecting another Pipe node.
+
+---
+
+#### Why Use It?
+- Cleaner workflows: fewer long cables crossing the graph.
+- Easier modularity: bundle data once, reuse it anywhere.
+- Subgraph-friendly: pass a single connection in and out of Subgraphs while keeping all signals intact.
+
+</details>
+
+---
+
+<details>
 <summary>🔗 Pipe Hub</summary>
 
 # 🔗 Pipe Hub
