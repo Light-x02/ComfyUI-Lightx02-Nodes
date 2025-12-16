@@ -44,6 +44,16 @@ Compatible with the extension [ComfyUI-ImageMetadataExtension](https://github.co
 
 ---
 
+<details>
+<summary>CHANGELOG</summary>
+
+#### Changelog
+- **2025-12-16 — Fixed**: 🧱 Universal Latent Settings (FLUX / SDXL / Z-image): After switching workflows and coming back, the node could generate at **1536×1536** even if another resolution was displayed. The selected resolution is now always applied correctly.
+
+</details>
+
+---
+
 ## 🧩 Custom Nodes
 
 <details>
