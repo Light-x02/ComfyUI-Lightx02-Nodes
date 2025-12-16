@@ -101,7 +101,12 @@ function firstSelectable(values) {
     return (values && values[0]) || "";
 }
 
-// ----- SECTION: Helpers -----
+function commitWidgetValues(node) {
+    if (!node || !Array.isArray(node.widgets)) return;
+    node.widgets_values = node.widgets.map((w) => w?.value);
+    node.setDirtyCanvas(true, true);
+}
+
 function groupPortraitSquareLandscape(rawList) {
     const portrait = [];
     const square = [];
@@ -126,6 +131,11 @@ function groupPortraitSquareLandscape(rawList) {
         return b.w - a.w;
     });
 
+    square.sort((a, b) => {
+        if (b.w !== a.w) return b.w - a.w;
+        return b.h - a.h;
+    });
+
     landscape.sort((a, b) => {
         const ra = a.w / a.h;
         const rb = b.w / b.h;
@@ -134,20 +144,14 @@ function groupPortraitSquareLandscape(rawList) {
         return a.h - b.h;
     });
 
-    square.sort((a, b) => {
-        if (b.w !== a.w) return b.w - a.w;
-        return b.h - a.h;
-    });
-
     const out = [];
 
-    if (portrait.length) out.push("----PORTRAIT----", ...portrait.map(x => x.item));
-    if (square.length) out.push("----SQUARE----", ...square.map(x => x.item));
-    if (landscape.length) out.push("----LANDSCAPE----", ...landscape.map(x => x.item));
+    if (portrait.length) out.push("----PORTRAIT----", ...portrait.map((x) => x.item));
+    if (square.length) out.push("----SQUARE----", ...square.map((x) => x.item));
+    if (landscape.length) out.push("----LANDSCAPE----", ...landscape.map((x) => x.item));
 
     return out.length ? out : (rawList || []);
 }
-
 
 function normalizeModel(model) {
     const m = String(model || "Z-image (1024)");
@@ -176,7 +180,7 @@ function setComboValues(node, widget, values) {
         widget.value = firstSelectable(values);
     }
 
-    node.setDirtyCanvas(true, true);
+    commitWidgetValues(node);
 }
 
 function syncResolutionChoices(node) {
@@ -200,7 +204,7 @@ function fixSeparatorSelection(node) {
     for (let i = idx + 1; i < values.length; i++) {
         if (!isSeparator(values[i])) {
             resW.value = values[i];
-            node.setDirtyCanvas(true, true);
+            commitWidgetValues(node);
             return;
         }
     }
@@ -208,13 +212,13 @@ function fixSeparatorSelection(node) {
     for (let i = idx - 1; i >= 0; i--) {
         if (!isSeparator(values[i])) {
             resW.value = values[i];
-            node.setDirtyCanvas(true, true);
+            commitWidgetValues(node);
             return;
         }
     }
 
     resW.value = firstSelectable(values);
-    node.setDirtyCanvas(true, true);
+    commitWidgetValues(node);
 }
 
 function applyVioletTheme(node) {
@@ -237,36 +241,84 @@ function enforceModelChoices(node) {
     }
 }
 
+function bindCallbacksOnce(node) {
+    if (!node || node._uls_bound === true) return;
+    node._uls_bound = true;
+    node._uls_lock = false;
+
+    const modelW = findWidget(node, "model_resolution");
+    if (modelW) {
+        const prev = modelW.callback;
+        modelW.callback = function () {
+            if (typeof prev === "function") prev.apply(this, arguments);
+            if (node._uls_lock) return;
+
+            node._uls_lock = true;
+            try {
+                enforceModelChoices(node);
+                syncResolutionChoices(node);
+                fixSeparatorSelection(node);
+                commitWidgetValues(node);
+            } finally {
+                node._uls_lock = false;
+            }
+        };
+    }
+
+    const resW = findWidget(node, "resolution");
+    if (resW) {
+        const prev = resW.callback;
+        resW.callback = function () {
+            if (typeof prev === "function") prev.apply(this, arguments);
+            if (node._uls_lock) return;
+
+            node._uls_lock = true;
+            try {
+                fixSeparatorSelection(node);
+                commitWidgetValues(node);
+            } finally {
+                node._uls_lock = false;
+            }
+        };
+    }
+}
+
+function bootNode(node) {
+    if (!node) return;
+
+    applyVioletTheme(node);
+    enforceModelChoices(node);
+    bindCallbacksOnce(node);
+
+    node._uls_lock = true;
+    try {
+        syncResolutionChoices(node);
+        fixSeparatorSelection(node);
+        commitWidgetValues(node);
+    } finally {
+        node._uls_lock = false;
+    }
+}
 
 // ----- SECTION: Register Extension -----
 app.registerExtension({
     name: "lightx02.universal_latent_settings.dynamic_resolutions",
-    nodeCreated(node) {
-        if (node?.comfyClass !== NODE_CLASS && node?.type !== NODE_CLASS) return;
+    beforeRegisterNodeDef(nodeType, nodeData) {
+        const comfyClass = String(nodeType?.comfyClass || nodeData?.name || "");
+        if (comfyClass !== NODE_CLASS) return;
 
-        applyVioletTheme(node);
+        const onNodeCreated = nodeType.prototype.onNodeCreated;
+        nodeType.prototype.onNodeCreated = function () {
+            const r = onNodeCreated?.apply(this, arguments);
+            bootNode(this);
+            return r;
+        };
 
-        enforceModelChoices(node);
-
-        const modelW = findWidget(node, "model_resolution");
-        if (modelW) {
-            const prev = modelW.callback;
-            modelW.callback = function () {
-                if (typeof prev === "function") prev.apply(this, arguments);
-                enforceModelChoices(node);
-                syncResolutionChoices(node);
-            };
-        }
-
-        const resW = findWidget(node, "resolution");
-        if (resW) {
-            const prev = resW.callback;
-            resW.callback = function () {
-                if (typeof prev === "function") prev.apply(this, arguments);
-                fixSeparatorSelection(node);
-            };
-        }
-
-        syncResolutionChoices(node);
+        const configure = nodeType.prototype.configure;
+        nodeType.prototype.configure = function () {
+            const r = configure?.apply(this, arguments);
+            bootNode(this);
+            return r;
+        };
     },
 });
